@@ -274,6 +274,11 @@ install_docker() {
 
   log "Docker is not installed. Installing..."
 
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    install_docker_macos
+    return
+  fi
+
   if command -v apt-get >/dev/null 2>&1; then
     # Debian, Ubuntu, and derivatives.
     apt-get update
@@ -332,9 +337,69 @@ install_docker() {
     and run this installer again."
 }
 
+#
+# Homebrew refuses to run as root, and rightly so - a cask installs
+# into the invoking user's /Applications and Launch Services database,
+# not root's. This installer's own require_root gate means the whole
+# script is already running under sudo by the time we get here, so
+# brew (and the later 'open' to launch Docker Desktop) are run back as
+# the original invoking user via SUDO_USER rather than as root.
+#
+install_docker_macos() {
+  if ! command -v brew >/dev/null 2>&1; then
+    die "Homebrew was not found, so Docker Desktop can't be installed
+    automatically on macOS.
+
+    Install Homebrew first:
+
+        https://brew.sh
+
+    Or install Docker Desktop manually from:
+
+        https://www.docker.com/products/docker-desktop/
+
+    Then re-run this installer."
+  fi
+
+  local brew_user="${SUDO_USER:-}"
+
+  if [[ -z "$brew_user" || "$brew_user" == "root" ]]; then
+    die "Homebrew must not be run as root, and no non-root invoking user
+    could be determined from \$SUDO_USER.
+
+    Install Docker Desktop manually instead, as your normal (non-root)
+    user:
+
+        brew install --cask docker
+
+    Then re-run this installer."
+  fi
+
+  log "Installing Docker Desktop via Homebrew (as user: ${brew_user})..."
+
+  sudo -u "$brew_user" brew install --cask docker ||
+    die "Homebrew install of Docker Desktop failed.
+
+    Install it manually from:
+
+        https://www.docker.com/products/docker-desktop/
+
+    Then re-run this installer."
+
+  log "Docker Desktop installed. Launching it now - macOS may prompt
+  ${brew_user} to grant permissions or accept a license on first run."
+
+  sudo -u "$brew_user" open -a Docker 2>/dev/null || true
+}
+
 verify_docker() {
   command -v docker >/dev/null 2>&1 ||
     die "Docker installation failed."
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    verify_docker_macos
+    return
+  fi
 
   if ! systemctl is-active --quiet docker; then
     log "Starting Docker service..."
@@ -348,6 +413,57 @@ verify_docker() {
 
         sudo systemctl status docker"
   fi
+}
+
+#
+# macOS has no systemd; Docker Desktop is a GUI app, not a service to
+# 'enable --now'. This starts it if not already running and polls
+# 'docker info' until the engine responds, since a freshly-installed
+# or freshly-launched Docker Desktop can take a while to come up - a
+# single check right after launch will almost always fail even though
+# nothing is actually wrong.
+#
+verify_docker_macos() {
+  if docker info >/dev/null 2>&1; then
+    return
+  fi
+
+  log "Docker daemon not responding - starting Docker Desktop..."
+
+  local open_user="${SUDO_USER:-}"
+  if [[ -n "$open_user" && "$open_user" != "root" ]]; then
+    sudo -u "$open_user" open -a Docker 2>/dev/null || true
+  else
+    open -a Docker 2>/dev/null || true
+  fi
+
+  log "Waiting for Docker Desktop to finish starting (up to 90s)..."
+
+  local elapsed=0
+  local timeout=90
+  local interval=3
+
+  while (( elapsed < timeout )); do
+    sleep "$interval"
+    elapsed=$(( elapsed + interval ))
+
+    if docker info >/dev/null 2>&1; then
+      log "Docker is ready."
+      return
+    fi
+  done
+
+  die "Docker Desktop did not become ready within ${timeout}s.
+
+  This commonly means:
+
+    - Docker Desktop is waiting on its first-run setup or a license
+      prompt - check for a Docker Desktop window and complete it.
+    - Docker Desktop needs its privileged helper/permissions approved
+      the first time - check System Settings > Privacy & Security.
+
+  Once Docker Desktop shows a running whale icon in the menu bar,
+  re-run this installer."
 }
 
 run_flow_version() {

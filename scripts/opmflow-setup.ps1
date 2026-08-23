@@ -5,15 +5,13 @@
 
 .DESCRIPTION
     Installs Docker Desktop if needed, pulls the OPM Flow image, and
-    installs 'opmflow' and 'flow' commands on your PATH - the Windows
-    counterpart to opmflow-setup.sh.
+    installs 'opmflow' and 'flow' commands on your PATH.
 
-    Design differences from the Linux installer are deliberate, not
-    oversights - see the comments through this file for why. The short
-    version: this installs per-user (no Administrator rights needed for
-    normal use, only Docker Desktop's own installer may prompt for UAC),
-    since Windows has no root/sudo model and Docker Desktop itself runs
-    per-user once installed.
+    This installer works per-user: no Administrator rights are needed
+    for normal use, since Windows has no root/sudo model and Docker
+    Desktop itself runs per-user once installed. The one exception is
+    installing Docker Desktop itself if it isn't already present -
+    that installer may prompt for UAC elevation on its own.
 
 .PARAMETER Version
     OPM Flow version: 'latest' or 'YYYY.MM'. Default: latest.
@@ -151,7 +149,7 @@ Supported variants:
 # RuntimeInformation.OSArchitecture is the
 # reliable cross-version way to get the actual OS architecture (as
 # opposed to $env:PROCESSOR_ARCHITECTURE, which reports the process's
-# architecture and can misreport under WOW64 - a 32-bit PowerShell
+# architecture and can misreport under WOW64. A 32-bit PowerShell
 # host on a 64-bit OS would see 'x86' from the env var but this API
 # still correctly reports the OS as X64/Arm64).
 #
@@ -374,6 +372,15 @@ Then re-run this installer.
 "@
   }
 
+  if (-not (Test-IsAdministrator)) {
+    Write-WarnLog @"
+This terminal is not running as Administrator. Docker Desktop's own
+installer typically needs elevation and may show a UAC prompt during
+the next step - approve it if so. If the install fails outright,
+re-run this script from an elevated PowerShell instead.
+"@
+  }
+
   Write-Log "Installing Docker Desktop via winget (this may prompt for administrator approval)..."
 
   winget install --exact --id Docker.DockerDesktop `
@@ -404,7 +411,8 @@ and re-run this installer.
 function Wait-DockerReady {
   param([int]$TimeoutSeconds = 90)
 
-  if (docker info *> $null; $LASTEXITCODE -eq 0) {
+  docker info *> $null
+  if ($LASTEXITCODE -eq 0) {
     return
   }
 
@@ -502,7 +510,7 @@ OPM_FLOW_IMAGE=$CfgImage
 # flow so both PowerShell and cmd.exe users get a plain 'opmflow' /
 # 'flow' command. Windows can't create symlinks without either
 # Administrator rights or Developer Mode enabled (unlike 'ln -sf' on
-# Linux, which needs neither) - a second small shim file sidesteps
+# Linux, which needs neither). A second small shim file sidesteps
 # that entirely instead of depending on either.
 # ---------------------------------------------------------------------
 #
