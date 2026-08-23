@@ -29,7 +29,7 @@ That's it. Someone will follow up on the issue itself, so keep an eye on it, eit
 
 Copy everything inside the box below into the issue description box, then replace each placeholder with your own details. You do not need to remove the headings, just fill in the blanks underneath them. If a section does not apply to your situation, it is fine to write "not applicable" rather than deleting it.
 
-````
+````text
 ### Which script were you running?
 
 (For example: opmflow-setup.sh, opmflow-setup.ps1, resinsight-setup.sh, or resinsight-setup.ps1)

@@ -112,26 +112,26 @@ If you already have a terminal open, this is often faster than clicking through 
 
 On Linux or macOS:
 
-```
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/opmflow-setup.sh
+```bash
+curl -O https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/opmflow-setup.sh
 ```
 
 On Windows, in PowerShell:
 
-```
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/opmflow-setup.ps1 -OutFile opmflow-setup.ps1
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/opmflow-setup.ps1 -OutFile opmflow-setup.ps1
 ```
 
-Replace `YOUR_USERNAME/YOUR_REPO` with wherever this repository is actually hosted, and swap the file name for whichever of the four scripts you need.
+Swap the `<filename>` in `https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/<filename>` with the name of whichever of the four scripts you need (Do not forget to include the file extension in the file name - ".ps1" or ".sh").
 
 ### Option C: Clone the whole repository (if you already use git)
 
-```
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
+```bash
+git clone https://github.com/ti-oluwa/opmflow-setup-guide.git
+cd opmflow-setup-guide
 ```
 
-All four scripts will now be in that folder together.
+All four scripts will now be in that folder - `opmflow-setup-guide/scripts`, together.
 
 ## Part 1: OPM Flow
 
@@ -167,7 +167,7 @@ You should see a mostly empty window with some text and a blinking cursor, waiti
 
 If you saved `opmflow-setup.sh` in your Downloads folder, for example, type:
 
-```
+```bash
 cd ~/Downloads
 ```
 
@@ -179,7 +179,7 @@ and press Enter. `cd` means "change directory," which is the terminal's way of s
 
 Scripts you download are not allowed to run by default, as a safety measure. You need to explicitly mark the file as runnable:
 
-```
+```bash
 chmod +x opmflow-setup.sh
 ```
 
@@ -189,7 +189,7 @@ chmod +x opmflow-setup.sh
 
 #### Step 4: Run the script with sudo
 
-```
+```bash
 sudo ./opmflow-setup.sh
 ```
 
@@ -232,7 +232,7 @@ If you are not sure whether your Mac has Apple Silicon (M1, M2, M3, or newer) or
 
 Alternatively, if you already have Homebrew installed (a popular package manager for macOS), you can install Docker Desktop with:
 
-```
+```bash
 brew install --cask docker
 ```
 
@@ -271,13 +271,13 @@ Once the image is downloaded, the script writes two small command files into `/u
 
 At the end, the script runs a quick check by asking OPM Flow to report its own version, to confirm everything actually works before declaring success. You should see a message like:
 
-```
+```text
 [opm-flow] OPM Flow installation completed.
 ```
 
 If you see that, you are done.
 
-#### How it works, for the curious
+#### How it works, for the curious ones
 
 If you are happy just using the tool, you can skip this part. If you want to understand what is actually happening behind the log lines, here is the fuller picture.
 
@@ -311,7 +311,7 @@ The fastest way is a single command. You can use either PowerShell or Command Pr
 1. Open the Start menu, type `PowerShell`, right-click on **Windows PowerShell**, and choose **Run as administrator**. Click **Yes** on the permissions prompt that appears.
 2. Type this command and press Enter:
 
-```
+```bash
 wsl --install
 ```
 
@@ -372,7 +372,7 @@ Open the Start menu, type `PowerShell`, and open it normally this time. You do n
 
 If you saved `opmflow-setup.ps1` in your Downloads folder:
 
-```
+```powershell
 cd $HOME\Downloads
 ```
 
@@ -382,13 +382,13 @@ cd $HOME\Downloads
 
 Windows blocks scripts from running by default as a security measure, called the execution policy. You need to allow it just for this one script, in just this one PowerShell window:
 
-```
+```powershell
 powershell -ExecutionPolicy Bypass -File .\opmflow-setup.ps1
 ```
 
 This runs the script once, bypassing the block only for this run, without permanently changing any Windows security settings. If you prefer, you can instead change the policy for your whole session and then run the script normally:
 
-```
+```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\opmflow-setup.ps1
 ```
@@ -431,13 +431,13 @@ Windows also has no concept of Linux's file permission numbers (the ones Linux u
 
 Once installed, running a simulation looks the same on every platform:
 
-```
+```bash
 flow SPE1.DATA
 ```
 
 Replace `SPE1.DATA` with the path to your own reservoir description file. If the file name has spaces in it, wrap it in quotes:
 
-```
+```bash
 flow "My Field.DATA"
 ```
 
@@ -445,7 +445,7 @@ A small but important note for Windows users specifically: PowerShell's escape c
 
 A few other commands you can use any time after install:
 
-```
+```bash
 opmflow version      # shows which OPM Flow version is currently installed
 opmflow image         # shows the exact Docker image being used
 opmflow variant        # shows which build variant (amd64, arm64, and so on) is active
@@ -454,7 +454,7 @@ opmflow config          # shows your full current configuration
 
 On Linux and macOS, changing your version or variant needs `sudo`, since it writes to a shared system configuration file:
 
-```
+```bash
 sudo opmflow upgrade              # switches to the latest available version
 sudo opmflow upgrade 2026.04       # switches to a specific version
 sudo opmflow configure --variant amd64   # switches to a specific build variant
@@ -462,7 +462,7 @@ sudo opmflow configure --variant amd64   # switches to a specific build variant
 
 On Windows, the same commands work without needing an elevated PowerShell, since configuration is stored per-user:
 
-```
+```bash
 opmflow upgrade
 opmflow upgrade 2026.04
 opmflow configure --variant amd64
@@ -498,7 +498,7 @@ Same as the OPM Flow section above: `Ctrl + Alt + T` on most Linux desktops, or 
 
 #### Step 2: Go to the folder where you saved the script
 
-```
+```bash
 cd ~/Downloads
 ```
 
@@ -506,13 +506,13 @@ adjusting the folder name if you saved it somewhere else.
 
 #### Step 3: Make the script executable
 
-```
+```bash
 chmod +x resinsight-setup.sh
 ```
 
 #### Step 4: Run the script
 
-```
+```bash
 sudo ./resinsight-setup.sh
 ```
 
@@ -520,7 +520,7 @@ By default this installs ResInsight system-wide (into `/opt/resinsight` on Linux
 
 **If you would rather not use `sudo` at all**, you can install into a folder you already own instead, for example your own home folder:
 
-```
+```bash
 ./resinsight-setup.sh --install-root "$HOME/resinsight"
 ```
 
@@ -538,7 +538,7 @@ Run without `sudo` this way, the script will not need administrator rights for t
 
 Some ResInsight releases publish two different Ubuntu builds, one built with a compiler called `gcc` and one built with `clang`. Unless you have a specific reason to prefer one, the script defaults to `gcc`, which is the more common choice. If you do want the other one:
 
-```
+```bash
 ./resinsight-setup.sh --toolchain clang
 ```
 
@@ -559,7 +559,7 @@ Downloaded files are kept in a small cache folder (`~/.cache/resinsight-setup` o
 
 Once installed, you can launch it by typing:
 
-```
+```bash
 resinsight
 ```
 
@@ -583,7 +583,7 @@ Open the Start menu, type `PowerShell`, and open it normally. Administrator righ
 
 #### Step 2: Go to the folder where you saved the script
 
-```
+```powershell
 cd $HOME\Downloads
 ```
 
@@ -591,7 +591,7 @@ cd $HOME\Downloads
 
 Same reasoning as the OPM Flow Windows section above, Windows blocks scripts by default:
 
-```
+```powershell
 powershell -ExecutionPolicy Bypass -File .\resinsight-setup.ps1
 ```
 
@@ -601,19 +601,19 @@ The script installs ResInsight into a folder under `$env:LOCALAPPDATA`, and by d
 
 If you would also like a shortcut on your Desktop, add this flag:
 
-```
+```powershell
 .\resinsight-setup.ps1 -DesktopShortcut
 ```
 
 If you would rather skip shortcut creation entirely:
 
-```
+```powershell
 .\resinsight-setup.ps1 -NoShortcut
 ```
 
 If you would like the `resinsight` command itself available in PowerShell (in addition to the Start Menu shortcut), add:
 
-```
+```powershell
 .\resinsight-setup.ps1 -AddToPath
 ```
 
@@ -629,7 +629,7 @@ You can combine flags, for example `.\resinsight-setup.ps1 -AddToPath -DesktopSh
 
 Either search for **ResInsight** in your Start Menu and click it, or, if you used `-AddToPath`, type:
 
-```
+```powershell
 resinsight
 ```
 
@@ -647,7 +647,7 @@ We have collected a separate list of common questions and answers in [FAQ.md](FA
 
 ## Reporting a problem
 
-If you run into an error that this guide did not help you solve, please open an issue rather than suffering in silence. Detailed instructions and a template for exactly what to include are in [ISSUE.md](ISSUE.md). The short version: tell us your operating system, which script you ran, the exact command you typed, and paste the full error text you saw. The more detail you give us, the faster we can actually fix it.
+If you run into an error that this guide did not help you solve, please open an issue rather than suffering in silence. Detailed instructions and a template for exactly what to include are in [ISSUE.md](ISSUE.md). The short version: tell us your operating system, which script you ran, the exact command you typed, and paste the full error text you saw. The more detail you give, the faster we can actually fix it.
 
 ## Contributing
 

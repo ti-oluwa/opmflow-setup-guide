@@ -1,6 +1,7 @@
 # Contributing
 
-Thank you for wanting to help improve these scripts or their documentation. This page explains how, at a level that does not assume you have contributed to an open source project before.
+Thank you for wanting to help improve these scripts or their documentation. This page explains how, at a level that does not assume you have contributed to an open source project before. To start you need a GitHub account. Visit <https://github.com> and click on the button that allows you to register an account. Watch the introductory video
+ you get after creating an account to get a idea of how to use the platform, that is if you get any.
 
 ## Ways to contribute, even without writing any code
 
@@ -16,16 +17,16 @@ This uses a process called a pull request, a way of proposing a specific change 
 1. **Make a copy of the repository under your own account.** On the repository's page, click the **Fork** button near the top right. This creates your own personal copy that you are free to change however you like, without affecting the original.
 2. **Get a local copy of your fork on your computer.**
 
-   ```
-   git clone https://github.com/YOUR_USERNAME/YOUR_FORKED_REPO.git
-   cd YOUR_FORKED_REPO
+   ```bash
+   git clone https://github.com/ti-oluwa/opmflow-setup-guide.git
+   cd opmflow-setup-guide
    ```
 
    If you do not have `git` installed, see [Git's official download page](https://git-scm.com/downloads) for instructions for your operating system.
 
 3. **Create a new branch for your change.** A branch is a separate line of work, so your change is kept apart from the main version until it is reviewed.
 
-   ```
+   ```bash
    git checkout -b fix-typo-in-readme
    ```
 
@@ -35,7 +36,7 @@ This uses a process called a pull request, a way of proposing a specific change 
 
 5. **Save your change, then record it with git:**
 
-   ```
+   ```bash
    git add .
    git commit -m "Fix typo in README installation steps"
    ```
@@ -44,7 +45,7 @@ This uses a process called a pull request, a way of proposing a specific change 
 
 6. **Send your change back up to your fork on GitHub:**
 
-   ```
+   ```bash
    git push origin fix-typo-in-readme
    ```
 
@@ -67,7 +68,6 @@ These scripts are meant to be safe and predictable to run on someone else's comp
 - Keep the tutorial, step by step tone used throughout the README. This documentation is written for people who may not be comfortable with the command line yet, especially on Windows, so please keep new sections approachable rather than assuming prior knowledge.
 - If you introduce a new technical term, add it to the [Glossary](README.md#glossary-words-used-in-this-guide) section, in plain, simple language, the same way the existing entries are written.
 - If you add a new step to a walkthrough, consider whether it needs its own "What can go wrong here" note underneath it, the same way the existing steps do.
-- Avoid using em dashes or en dashes in this documentation. Use regular hyphens, commas, or separate sentences instead.
 
 ## Questions before you start
 
