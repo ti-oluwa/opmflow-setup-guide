@@ -217,9 +217,9 @@ You do not have to let the script install Docker for you. If you would rather do
 
 **Video walkthrough (Linux):** if you prefer to watch someone do it step by step, here is a clear tutorial for installing Docker on Ubuntu, which is similar on most other Debian-based distributions too.
 
-[![How to Install Docker on Ubuntu Linux, step by step video guide](https://img.youtube.com/vi/8uX8aUGeisI/maxresdefault.jpg)](https://www.youtube.com/watch?v=8uX8aUGeisI)
+[![Easily Install Docker on Linux and Run Your First Container, step by step video guide](https://img.youtube.com/vi/FvdlwyMwrzg/maxresdefault.jpg)](https://www.youtube.com/watch?v=FvdlwyMwrzg)
 
-*(Click the thumbnail to watch on YouTube: "How to Install Docker on Ubuntu Linux | Step-by-Step Guide")*
+*(Click the thumbnail to watch on YouTube: "Easily Install Docker on Linux and Run Your First Container | Step-by-Step Guide")*
 
 **On macOS**, Docker is installed as an application called Docker Desktop, not through the terminal. The simplest way is:
 
@@ -329,9 +329,9 @@ wsl --install
 
 **Video walkthrough:** here is a clear, current walkthrough of installing WSL2 on Windows 11 from scratch.
 
-[![How to Install WSL2 and Ubuntu on Windows 11, step by step video guide](https://img.youtube.com/vi/t94LuGWROB8/maxresdefault.jpg)](https://www.youtube.com/watch?v=t94LuGWROB8)
+[![How to install Linux on Windows 11 with WSL for Beginners, step by step video guide](https://img.youtube.com/vi/zZf4YH4WiZo/maxresdefault.jpg)](https://www.youtube.com/watch?v=zZf4YH4WiZo)
 
-*(Click the thumbnail to watch on YouTube: "How to Install WSL2 and Ubuntu on Windows 11 (Step-by-Step Tutorial)")*
+*(Click the thumbnail to watch on YouTube: "How to install Linux on Windows 11 with WSL for Beginners (Step-by-Step Tutorial)")*
 
 **What can go wrong here:**
 
