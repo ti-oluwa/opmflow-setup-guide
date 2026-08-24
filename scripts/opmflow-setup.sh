@@ -338,7 +338,7 @@ install_docker() {
 }
 
 #
-# Homebrew refuses to run as root, and rightly so - a cask installs
+# Homebrew refuses to run as root, and rightly so. A cask installs
 # into the invoking user's /Applications and Launch Services database,
 # not root's. This installer's own require_root gate means the whole
 # script is already running under sudo by the time we get here, so
@@ -458,9 +458,9 @@ verify_docker_macos() {
   This commonly means:
 
     - Docker Desktop is waiting on its first-run setup or a license
-      prompt - check for a Docker Desktop window and complete it.
+      prompt. Check for a Docker Desktop window and complete it.
     - Docker Desktop needs its privileged helper/permissions approved
-      the first time - check System Settings > Privacy & Security.
+      the first time. Check System Settings > Privacy & Security.
 
   Once Docker Desktop shows a running whale icon in the menu bar,
   re-run this installer."
@@ -919,6 +919,20 @@ Run OPM Flow:
 
 All arguments not listed below are passed directly to OPM Flow.
 
+Only the current directory is visible to OPM Flow by default. That is, your
+.DATA file and anything it INCLUDEs need to live in the current
+directory or a subdirectory of it. If you have files elsewhere that a
+deck needs (e.g. a shared INCLUDE library), set OPM_FLOW_EXTRA_MOUNTS
+rather than moving them:
+
+    OPM_FLOW_EXTRA_MOUNTS=/data/shared flow CASE.DATA
+    OPM_FLOW_EXTRA_MOUNTS=/data/pvt=/mnt/pvt flow CASE.DATA
+    OPM_FLOW_EXTRA_MOUNTS=/data/a:/data/b flow CASE.DATA
+
+Colon-separated for more than one path. Each defaults to the same
+path inside the container; add =CONTAINER_PATH to mount it somewhere
+else instead.
+
 Management commands:
 
     opmflow version
@@ -1007,11 +1021,68 @@ run_flow() {
         mount_spec="${mount_spec}:z"
     fi
 
-    exec docker run --rm \
-        --init \
-        --user "$(id -u):$(id -g)" \
-        --workdir /simulation \
-        --volume "$mount_spec" \
+    local docker_args=(
+        --rm
+        --init
+        --user "$(id -u):$(id -g)"
+        --workdir /simulation
+        --volume "$mount_spec"
+    )
+
+    #
+    # Deliberately only the current directory is visible inside the
+    # container by default, not an oversight. Mounting the whole host
+    # filesystem would give the containerized OPM Flow binary (a third-party image), 
+    # read/write access to everything on the machine, for no benefit in the common case
+    # where a .DATA file and everything it INCLUDEs already live
+    # together in one project folder. If a deck genuinely needs to
+    # reference files outside the current directory (e.g. a shared
+    # INCLUDE library reused across cases), list their real paths here
+    # instead of widening the mount to everything:
+    #
+    #     OPM_FLOW_EXTRA_MOUNTS=/data/shared flow CASE.DATA
+    #
+    # Colon-separated for multiple paths, same as PATH. Each entry
+    # mounts at the same absolute path inside the container by
+    # default, so a path already written into your .DATA file works
+    # unmodified; use HOST_PATH=CONTAINER_PATH to mount somewhere
+    # else instead:
+    #
+    #     OPM_FLOW_EXTRA_MOUNTS=/data/pvt=/mnt/pvt flow CASE.DATA
+    #
+    if [[ -n "${OPM_FLOW_EXTRA_MOUNTS:-}" ]]; then
+        local IFS=':'
+        local entry
+        for entry in $OPM_FLOW_EXTRA_MOUNTS; do
+            [[ -n "$entry" ]] || continue
+
+            local host_path container_path
+            if [[ "$entry" == *=* ]]; then
+                host_path="${entry%%=*}"
+                container_path="${entry#*=}"
+            else
+                host_path="$entry"
+                container_path="$entry"
+            fi
+
+            if [[ ! -e "$host_path" ]]; then
+                warn "OPM_FLOW_EXTRA_MOUNTS: path does not exist, skipping: ${host_path}"
+                continue
+            fi
+
+            local extra_spec="${host_path}:${container_path}"
+
+            if command -v getenforce >/dev/null 2>&1 &&
+                [[ "$(getenforce 2>/dev/null)" == "Enforcing" ]]; then
+                extra_spec="${extra_spec}:z"
+            fi
+
+            docker_args+=(--volume "$extra_spec")
+        done
+    fi
+
+    exec docker run \
+        "${docker_args[@]}" \
         "$OPM_FLOW_IMAGE" \
         flow "$@"
 }

@@ -1,4 +1,4 @@
-# Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     OPM Flow Docker installer for Windows.
@@ -85,7 +85,7 @@ Options:
     -Help              Show this help and exit
 
 No Administrator rights are needed to run this installer under normal
-circumstances - it installs per-user under `$env:LOCALAPPDATA. Docker
+circumstances. It installs per-user under `$env:LOCALAPPDATA. Docker
 Desktop's own installer may still prompt for UAC elevation if Docker
 isn't already installed; that prompt comes from Docker's installer,
 not this script.
@@ -783,14 +783,32 @@ Run OPM Flow:
     opmflow SPE1.DATA
 
 All arguments not listed below are passed directly to OPM Flow. If a
-filename has spaces, quote it with double quotes - PowerShell's escape
+filename has spaces, quote it with double quotes. PowerShell's escape
 character is the backtick (``), not a backslash, so a backslash-escaped
-space (as you'd write in bash) will NOT work here and will be passed
+space (as you'd write in bash) will not work here and will be passed
 through literally:
 
     flow "My Field.DATA"       # correct
     flow My\ Field.DATA        # wrong on Windows - backslash is not
                                 # an escape character in PowerShell
+
+Only the current directory is visible to OPM Flow by default. That is, your
+.DATA file and anything it INCLUDEs need to live in the current
+directory or a subdirectory of it. This is deliberate as mounting the
+whole filesystem into the container would give OPM Flow (a third-party
+image) access to every file on this machine for no benefit in the
+common case. If a deck needs files elsewhere (e.g. a shared INCLUDE
+library), set OPM_FLOW_EXTRA_MOUNTS rather than moving them. Windows
+paths contain a colon for the drive letter, so entries are
+semicolon-separated, and each one must state where it goes inside the
+(Linux) container, since there's no automatic *same path* mapping
+across operating systems:
+
+    `$env:OPM_FLOW_EXTRA_MOUNTS = "C:\data\shared=/data/shared"
+    flow CASE.DATA
+
+    `$env:OPM_FLOW_EXTRA_MOUNTS = "C:\data\a=/data/a;C:\data\b=/mnt/b"
+    flow CASE.DATA
 
 Management commands:
 
@@ -854,7 +872,7 @@ function Invoke-RunFlow {
   $workdir = (Resolve-Path -LiteralPath .).Path
 
   # Docker Desktop's Windows docker.exe CLI accepts a native Windows
-  # path directly for -v and translates it internally - unlike
+  # path directly for -v and translates it internally. Unlike
   # legacy Docker Toolbox, no manual /c/Users/... conversion is
   # needed here.
   #
@@ -865,12 +883,42 @@ function Invoke-RunFlow {
   # container runs as whichever user its image defines by default.
   $mountSpec = "${workdir}:/simulation"
 
-  docker run --rm `
-    --init `
-    --workdir /simulation `
-    --volume $mountSpec `
-    $Config.OPM_FLOW_IMAGE `
-    flow @FlowArgs
+  $dockerArgs = @(
+    "run", "--rm", "--init",
+    "--workdir", "/simulation",
+    "--volume", $mountSpec
+  )
+
+  # Only the current directory is visible by default, deliberately.
+  # See Show-Help's fuller explanation. Windows paths contain a colon
+  # for the drive letter, so entries are semicolon-separated, and each
+  # one must explicitly state its container-side path (HOST=CONTAINER)
+  # since there's no sensible "same path" mapping from a Windows path
+  # into a Linux container the way there is on Linux/macOS.
+  if ($env:OPM_FLOW_EXTRA_MOUNTS) {
+    foreach ($entry in ($env:OPM_FLOW_EXTRA_MOUNTS -split ';')) {
+      if ([string]::IsNullOrWhiteSpace($entry)) { continue }
+
+      if ($entry -notmatch '^(.+)=(.+)$') {
+        Write-WarnLog "OPM_FLOW_EXTRA_MOUNTS: entry must be HOST_PATH=CONTAINER_PATH, skipping: $entry"
+        continue
+      }
+
+      $hostPath = $Matches[1]
+      $containerPath = $Matches[2]
+
+      if (-not (Test-Path $hostPath)) {
+        Write-WarnLog "OPM_FLOW_EXTRA_MOUNTS: path does not exist, skipping: $hostPath"
+        continue
+      }
+
+      $dockerArgs += @("--volume", "${hostPath}:${containerPath}")
+    }
+  }
+
+  $dockerArgs += @($Config.OPM_FLOW_IMAGE, "flow") + $FlowArgs
+
+  docker @dockerArgs
 
   exit $LASTEXITCODE
 }
@@ -917,3 +965,134 @@ function Main {
 
 Main @args
 '@
+
+    $wrapperContent | Set-Content -Path "$InstallDir\opmflow.ps1" -Encoding UTF8
+
+    # .cmd shims: plain 'opmflow'/'flow' from cmd.exe and from
+    # PowerShell (PowerShell resolves a bare command name against
+    # PATHEXT-listed extensions same as cmd.exe does, so a .cmd on
+    # PATH is invocable from either shell without an alias). Bypass
+    # is scoped to this one invocation via -ExecutionPolicy, not a
+    # persistent system-wide policy change.
+    $cmdShim = @"
+@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0opmflow.ps1" %*
+"@
+    $cmdShim | Set-Content -Path "$InstallDir\opmflow.cmd" -Encoding ASCII
+    $cmdShim | Set-Content -Path "$InstallDir\flow.cmd" -Encoding ASCII
+
+    # PowerShell-native equivalent too (thin forwarder), so 'flow'
+    # resolves from within PowerShell without going through the .cmd
+    # shim if $env:PATHEXT includes .ps1.
+    '& "$PSScriptRoot\opmflow.ps1" @args' |
+        Set-Content -Path "$InstallDir\flow.ps1" -Encoding UTF8
+
+    # Add to the User PATH (not Machine) - no elevation needed, and it
+    # only affects the current user, matching the per-user install
+    # philosophy this script uses throughout.
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($userPath -notlike "*$InstallDir*") {
+        $newPath = if ([string]::IsNullOrEmpty($userPath)) { $InstallDir } else { "$InstallDir;$userPath" }
+        [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+        Write-Log "Added to user PATH: $InstallDir"
+        Write-WarnLog "Open a new terminal window for the PATH change to take effect."
+    }
+
+    # Make it usable immediately in *this* session too, without
+    # waiting for a new terminal.
+    if ($env:Path -notlike "*$InstallDir*") {
+        $env:Path = "$InstallDir;$env:Path"
+    }
+}
+
+function Test-FlowWorks {
+  param([string]$Image)
+
+  Write-Log "Verifying OPM Flow..."
+
+  $output = (docker run --rm $Image flow --version 2>&1 | Out-String).Trim()
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host $output
+    Die "The OPM Flow image was pulled, but Flow could not be executed."
+  }
+
+  Write-Log "Flow reports:"
+  Write-Host $output
+}
+
+function Main {
+  if ($Help) {
+    Show-Help
+    return
+  }
+
+  Test-Version $Version
+  Test-Variant $Variant
+
+  Install-Docker
+  Wait-DockerReady
+  Test-LinuxContainerMode
+
+  Write-Log "OPM Flow configuration:"
+  Write-Log "    Requested version: $Version"
+  Write-Log "    Requested variant: $Variant"
+
+  if ($Version -eq "latest") {
+    Write-Log "Determining latest OPM Flow version..."
+    $resolved = Get-LatestVersionNumber
+
+    if ($resolved) {
+      Write-Log "Latest OPM Flow release (from registry API): $resolved"
+      $Version = $resolved
+    }
+    else {
+      Write-WarnLog "Could not reach the registry API; falling back to pulling :latest to read its version."
+
+      $latestImage = "${ImageRepository}:latest"
+      Invoke-PullImage $latestImage
+
+      $output = Invoke-RunFlowVersion $latestImage
+      $resolved = Get-VersionFromOutput $output
+      if (-not $resolved) {
+        Die "Unable to determine the OPM Flow version from:`n`n$output"
+      }
+
+      Write-Log "Resolved latest release: $resolved"
+      $Version = $resolved
+    }
+  }
+
+  $image = Resolve-Image -ImgVersion $Version -ImgVariant $Variant
+  Write-Log "Resolved image: $image"
+
+  Invoke-PullImage $image
+
+  Write-OpmConfig -CfgVersion $Version -CfgVariant $Variant -CfgImage $image
+
+  Install-Wrapper
+
+  Test-FlowWorks $image
+
+  Write-Log ""
+  Write-Log "OPM Flow installation completed."
+  Write-Log ""
+  Write-Log "Pinned configuration:"
+  Write-Log "    Version: $Version"
+  Write-Log "    Variant: $Variant"
+  Write-Log "    Image:   $image"
+  Write-Log ""
+  Write-Log "Run (open a new terminal first if this is the first install):"
+  Write-Log "    flow SPE1.DATA"
+  Write-Log "    opmflow SPE1.DATA"
+  Write-Log ""
+  Write-Log "Management:"
+  Write-Log "    opmflow version"
+  Write-Log "    opmflow image"
+  Write-Log "    opmflow variant"
+  Write-Log "    opmflow config"
+  Write-Log "    opmflow upgrade"
+  Write-Log "    opmflow upgrade VERSION"
+  Write-Log "    opmflow configure --variant VARIANT"
+}
+
+Main

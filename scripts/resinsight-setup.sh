@@ -24,6 +24,16 @@ readonly DEFAULT_INSTALL_ROOT_MACOS="/Applications"
 readonly DEFAULT_SYMLINK="/usr/local/bin/resinsight"
 readonly DEFAULT_SEGYIMPORT_SYMLINK="/usr/local/bin/resinsight-segyimport"
 
+#
+# ResInsight's own Linux packages don't reliably include an icon file
+# anywhere findable, so the local search in install_desktop_entry
+# often comes up empty. This is a known-good copy of ResInsight's own
+# official application icon (pulled from OPM/ResInsight's own
+# ApplicationExeCode/Resources/AppLogo48x48.png), hosted alongside this script so
+# there's a reliable fallback instead of an icon-less menu entry.
+#
+readonly FALLBACK_ICON_URL="https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/main/icons/resinsight.png"
+
 RESINSIGHT_VERSION="$DEFAULT_VERSION"
 TOOLCHAIN="$DEFAULT_TOOLCHAIN"
 INSTALL_ROOT=""
@@ -213,7 +223,7 @@ fetch_release_json() {
     url="${API_BASE}/releases/latest"
   else
     #
-    # Accept the version with or without a leading 'v'. The repo's
+    # Accept the version with or without a leading 'v' - the repo's
     # tags are all 'vYYYY.MM.P', but people naturally type the
     # version as it's displayed on the releases page (e.g.
     # '2026.06.1'), not as the underlying git tag.
@@ -264,7 +274,7 @@ fetch_release_json() {
 
 #
 # Extract "name<TAB>browser_download_url<TAB>size" for every asset, one
-# per line. Deliberately avoids a JSON parser dependency (jq is not
+# per line. Deliberately avoids a JSON parser dependency (as jq is not
 # guaranteed to be installed). The GitHub API always emits one "name",
 # one "browser_download_url", and one "size" field per asset object,
 # each on its own line when the response isn't minified, which curl's
@@ -320,7 +330,7 @@ select_asset() {
 
 #
 # Returns the cache path an asset would live at for a given release,
-# namespaced by tag, not just by asset name, since at least one
+# namespaced by tag not just by asset name, since at least one
 # current asset (ResInsight-RHEL8.zip) has a static filename with no
 # version embedded in it. Keying by name alone would risk silently
 # reusing a stale archive from a previous release once that project
@@ -451,7 +461,7 @@ normalize_extracted_dir() {
 # determines its own directory via the shell's $_ variable and does
 # 'cd "$(dirname "$_")"' before exec'ing the real binary. That only
 # happens to work if you're already sitting in its own directory when
-# you run it - $_ does not reliably resolve to the script's real
+# you run it. $_ does not reliably resolve to the script's real
 # location through a symlink, and on several systems it's simply empty
 # by the time that line runs, silently falling back to the current
 # directory instead of the install directory. A plain symlink to that
@@ -472,7 +482,7 @@ find_binary_exact() {
 #
 # Writes a small wrapper at $1 that cd's into the real bin/ directory
 # ($2) and execs the actual binary ($3) from there, rather than
-# symlinking to it directly - see find_binary_exact's comment above
+# symlinking to it directly. See find_binary_exact's comment above
 # for why a symlink doesn't work here. Falls back to sudo for the
 # write the same way run_privileged does elsewhere, since this can
 # land in /usr/local/bin.
@@ -511,7 +521,7 @@ EOF
   # explicit who= is masked by the current umask. Under a restrictive
   # umask (root/sudo sessions often use 077 rather than a regular
   # user's 022), that silently leaves the execute bit unset for
-  # everyone but root (installable and even runnable via sudo), but
+  # everyone but root. So its installable and even runnable via sudo, but
   # "Permission denied" for the exact command this is meant to expose
   # to a normal user.
   #
@@ -535,7 +545,7 @@ EOF
 # trusting the directory's mere existence, since on Linux the install
 # directory is itself named after the tag (a reasonable signal on its
 # own) but on macOS the install path is always ResInsight.app
-# regardless of version. Only the marker actually distinguishes them.
+# regardless of version and only the marker actually distinguishes them.
 #
 version_marker_path() {
   local target="$1"
@@ -568,7 +578,7 @@ is_already_installed() {
 # Resolves the home directory a desktop entry should be installed
 # into. When this script is run via sudo (the normal case for the
 # default /opt/resinsight install), $HOME is root's, not the actual
-# desktop user's - SUDO_USER is used to find the real one instead.
+# desktop user's. SUDO_USER is used to find the real one instead.
 # When run without sudo (e.g. a --install-root the user already owns),
 # $HOME is already correct.
 #
@@ -597,7 +607,7 @@ install_desktop_entry() {
   local desktop_user="${SUDO_USER:-}"
 
   #
-  # Best-effort icon search - the package layout isn't guaranteed to
+  # Best-effort icon search. The package layout isn't guaranteed to
   # include one at a known path, so this is opportunistic. Desktop
   # environments fall back to a generic icon just fine if Icon= is
   # simply omitted, so a miss here is not an error.
@@ -607,6 +617,30 @@ install_desktop_entry() {
     | grep -i 'resinsight\|icon' | head -n1 || true)"
   if [[ -z "$icon" ]]; then
     icon="$(find "$target" -maxdepth 4 -type f \( -iname '*.png' -o -iname '*.svg' \) 2>/dev/null | head -n1 || true)"
+  fi
+
+  #
+  # Still nothing bundled: try our own known-good fallback icon.
+  # Best-effort only. If the download fails for any reason (offline,
+  # DNS, the file moved), the entry is still created without Icon=,
+  # exactly as it already would have been without this fallback.
+  #
+  if [[ -z "$icon" ]]; then
+    local fallback_icon="${CACHE_DIR}/resinsight-icon.png"
+
+    if [[ -f "$fallback_icon" ]]; then
+      icon="$fallback_icon"
+    else
+      mkdir -p "$(dirname "$fallback_icon")" 2>/dev/null || true
+
+      if curl -sSL -f -o "$fallback_icon" "$FALLBACK_ICON_URL" 2>/dev/null && [[ -s "$fallback_icon" ]]; then
+        icon="$fallback_icon"
+        log "Downloaded a fallback application icon."
+      else
+        rm -f "$fallback_icon"
+        warn "Could not download a fallback icon; the menu entry will use a generic icon."
+      fi
+    fi
   fi
 
   local tmp_desktop
@@ -626,7 +660,7 @@ install_desktop_entry() {
   #
   # Same umask trap as the launcher wrapper: mktemp starts this at
   # 600. Explicit octal mode so it's readable by everyone regardless
-  # of umask - some desktop environments (GNOME/Nautilus in
+  # of umask. Some desktop environments (GNOME/Nautilus in
   # particular) also treat the executable bit as part of trusting a
   # .desktop entry as launchable, not just parsing it, so it's set
   # here too rather than leaving it merely readable.
@@ -850,12 +884,12 @@ Downloads and installs a ResInsight release from:
 
     https://github.com/${REPO}/releases
 
-Platform support varies by release - this script queries the GitHub API
+Platform support varies by release. This script queries the GitHub API
 for the actual assets published under the chosen release and picks the
 one matching this machine's OS/architecture. If that release has
 nothing for this platform, it says so rather than guessing. Once a
 version is installed, re-running this script is a no-op unless the
-release changes or --force is passed - it will not redownload or
+release changes or --force is passed. It will not redownload or
 reinstall the same version.
 
 Downloaded archives are also cached on disk (by release + asset name)
@@ -898,7 +932,7 @@ Examples:
 
 Installing to the default location and creating the 'resinsight'
 command on PATH needs write access to ${DEFAULT_INSTALL_ROOT_LINUX} and
-$(dirname "$DEFAULT_SYMLINK") - if you're not running as root, this
+$(dirname "$DEFAULT_SYMLINK"). If you're not running as root, this
 script will invoke sudo itself for just those steps (you'll get a
 password prompt at that point). To avoid sudo entirely, install
 somewhere you own instead:
@@ -908,7 +942,7 @@ somewhere you own instead:
 On Linux, a ResInsight entry is also added to your application menu
 (~/.local/share/applications) so it shows up alongside other installed
 apps, not just as a terminal command. On macOS, the installed
-ResInsight.app already appears in Launchpad and Spotlight on its own -
+ResInsight.app already appears in Launchpad and Spotlight on its own, so
 no extra step is needed there.
 
 For Windows, use resinsight-setup.ps1 instead. This script requires a
