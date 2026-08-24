@@ -32,7 +32,7 @@ readonly DEFAULT_SEGYIMPORT_SYMLINK="/usr/local/bin/resinsight-segyimport"
 # ApplicationExeCode/Resources/AppLogo48x48.png), hosted alongside this script so
 # there's a reliable fallback instead of an icon-less menu entry.
 #
-readonly FALLBACK_ICON_URL="https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/main/icons/resinsight.png"
+readonly FALLBACK_ICON_URL="https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/icons/resinsight.png"
 
 RESINSIGHT_VERSION="$DEFAULT_VERSION"
 TOOLCHAIN="$DEFAULT_TOOLCHAIN"
