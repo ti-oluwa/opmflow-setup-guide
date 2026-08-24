@@ -10,8 +10,8 @@
     This installer works per-user: no Administrator rights are needed
     for normal use, since Windows has no root/sudo model and Docker
     Desktop itself runs per-user once installed. The one exception is
-    installing Docker Desktop itself if it isn't already present -
-    that installer may prompt for UAC elevation on its own.
+    installing Docker Desktop itself if it isn't already present.
+    The installer for that may prompt for UAC elevation on its own.
 
 .PARAMETER Version
     OPM Flow version: 'latest' or 'YYYY.MM'. Default: latest.
@@ -246,7 +246,7 @@ function Resolve-Image {
     return $image
   }
 
-  # Explicit variant - never silently fall back to another variant.
+  # Explicit variant so we never silently fall back to another variant.
   if ($ImgVariant -ne "auto") {
     $image = Get-ImageForVariant $ImgVersion $ImgVariant
     if (-not (Try-ResolveImage $image)) {

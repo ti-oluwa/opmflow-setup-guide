@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# ResInsight installer - Linux and macOS.
+# ResInsight installer for Linux and macOS.
 #
 # ResInsight's GitHub releases do not follow a fixed asset-naming scheme
 # (the project has renamed its packages several times over the years, and
@@ -75,11 +75,11 @@ require_tool() {
 
 #
 # Run a command directly if the target path is writable, otherwise via
-# sudo. This mirrors what install_macos already did for /Applications -
+# sudo. This mirrors what install_macos already did for /Applications, 
 # applied consistently here so a plain (non-root) invocation on Linux
 # gets prompted for sudo exactly when it's actually needed, rather than
-# failing outright (the "mkdir: Permission denied" bug) or requiring the
-# whole script to be re-run under sudo from the start.
+# failing outright or requiring the whole script to be re-run under sudo 
+# from the start.
 #
 run_privileged() {
   local target_dir="$1"
@@ -109,9 +109,9 @@ run_privileged() {
 
 #
 # Detect OS + architecture, and build the set of regex patterns that a
-# release asset's filename must match to be considered "for this
-# platform". Kept as patterns (not a single fixed name) since the
-# project's own naming has changed release to release - the current
+# release asset's filename must match to be considered for this
+# platform. Kept as patterns (not a single fixed name) since the
+# project's own naming has changed release to release. The current
 # release alone ships RHEL8, two different Ubuntu 24.04 toolchain
 # builds, and a single unsuffixed macOS build, none of which match a
 # single naive pattern.
@@ -223,7 +223,7 @@ fetch_release_json() {
     url="${API_BASE}/releases/latest"
   else
     #
-    # Accept the version with or without a leading 'v' - the repo's
+    # Accept the version with or without a leading 'v' as the repo's
     # tags are all 'vYYYY.MM.P', but people naturally type the
     # version as it's displayed on the releases page (e.g.
     # '2026.06.1'), not as the underlying git tag.
@@ -516,7 +516,7 @@ EOF
   fi
 
   #
-  # Explicit octal mode, not symbolic '+x': mktemp creates this file
+  # Explicit octal mode, not symbolic '+x'. mktemp creates this file
   # at 600 (owner-only, no bits for group/other), and '+x' without an
   # explicit who= is masked by the current umask. Under a restrictive
   # umask (root/sudo sessions often use 077 rather than a regular
@@ -620,21 +620,44 @@ install_desktop_entry() {
   fi
 
   #
-  # Still nothing bundled: try our own known-good fallback icon.
-  # Best-effort only. If the download fails for any reason (offline,
-  # DNS, the file moved), the entry is still created without Icon=,
-  # exactly as it already would have been without this fallback.
+  # Still nothing bundled? Try our own known-good fallback icon.
+  #
+  # This is cached under the actual desktop user's home
+  # (desktop_home, resolved above), deliberately not under the
+  # global $CACHE_DIR used for download caching elsewhere in this
+  # script. $CACHE_DIR is root's cache when this script runs under
+  # sudo (the normal case for the default /opt/resinsight install),
+  # since $HOME is root's at that point. A file living there is
+  # unreadable by the regular desktop user whose .desktop entry is
+  # about to reference it, which silently renders as a blank icon
+  # rather than an error anywhere. Explicit chmod/chown after the
+  # download guards against this same restrictive-umask trap already
+  # documented on write_launcher_wrapper's chmod above: mkdir -p and
+  # curl's own file creation both go through whatever umask this
+  # process is running under, which can leave things owner-only-root
+  # even after chowning just the leaf file if a parent directory
+  # (e.g. this user's very first ~/.cache) was also freshly created
+  # by that same restrictive umask.
   #
   if [[ -z "$icon" ]]; then
-    local fallback_icon="${CACHE_DIR}/resinsight-icon.png"
+    local fallback_icon="${desktop_home}/.cache/resinsight-setup/resinsight-icon.png"
+    local fallback_dir
+    fallback_dir="$(dirname "$fallback_icon")"
 
     if [[ -f "$fallback_icon" ]]; then
       icon="$fallback_icon"
     else
-      mkdir -p "$(dirname "$fallback_icon")" 2>/dev/null || true
+      mkdir -p "$fallback_dir" 2>/dev/null || true
+      chmod 0755 "${desktop_home}/.cache" "$fallback_dir" 2>/dev/null || true
 
       if curl -sSL -f -o "$fallback_icon" "$FALLBACK_ICON_URL" 2>/dev/null && [[ -s "$fallback_icon" ]]; then
         icon="$fallback_icon"
+        chmod 0644 "$fallback_icon" 2>/dev/null || true
+
+        if [[ -n "$desktop_user" && "$desktop_user" != "root" ]]; then
+          chown "$desktop_user" "${desktop_home}/.cache" "$fallback_dir" "$fallback_icon" 2>/dev/null || true
+        fi
+
         log "Downloaded a fallback application icon."
       else
         rm -f "$fallback_icon"
