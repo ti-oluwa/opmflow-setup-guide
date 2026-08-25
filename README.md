@@ -29,6 +29,7 @@ If something in this guide does not work for you, that is useful information for
   - [OPM Flow on Linux and macOS](#opm-flow-on-linux-and-macos)
   - [OPM Flow on Windows](#opm-flow-on-windows)
   - [Using OPM Flow after install](#using-opm-flow-after-install)
+  - [Where OPM Flow can see your files](#where-opm-flow-can-see-your-files)
 - [Part 2: ResInsight](#part-2-resinsight)
   - [What ResInsight is](#what-resinsight-is)
   - [What the installer actually does](#what-the-resinsight-installer-actually-does)
@@ -89,6 +90,8 @@ If some of these words are new to you, read through this section once before you
 **Package manager:** A tool that installs and updates other software for you automatically, instead of you hunting down installers yourself. Examples used in this guide are `apt` (Ubuntu and Debian), `dnf` and `yum` (Fedora and RHEL-based systems), `Homebrew` (macOS), and `winget` (Windows).
 
 **Shortcut / symlink:** A pointer to a program that lives somewhere else, so you can launch it from an easier place (like your Start Menu or desktop) without knowing its real file location.
+
+**Environment variable:** A named value that your terminal session or your whole computer keeps track of, which programs can read. Some steps in this guide ask you to set one before running a command, for example `OPM_FLOW_EXTRA_MOUNTS=/some/path flow CASE.DATA`. Setting it this way only affects that one command; it does not change your computer's settings permanently.
 
 ## Getting the scripts onto your computer
 
@@ -468,6 +471,55 @@ opmflow upgrade 2026.04
 opmflow configure --variant amd64
 ```
 
+### Where OPM Flow can see your files
+
+This part matters more than it might seem, so it gets its own section rather than being buried in a note.
+
+When you run `flow SPE1.DATA`, OPM Flow is not actually running directly on your computer. It is running inside a Docker container, a sealed box, as explained in the glossary above. By default, the only folder from your computer that OPM Flow can see and use inside that box is the one you are standing in when you type the command (your current folder), along with anything inside it.
+
+In practice, this means: **your `.DATA` file, and every other file it refers to with an `INCLUDE` statement, need to live in the folder you are running `flow` from, or in a subfolder underneath it.** If your `.DATA` file tries to `INCLUDE` a file from somewhere else entirely on your computer, for example a shared properties file kept in a different project folder, OPM Flow will not be able to find it, even though the file genuinely exists on your machine.
+
+**Why it works this way, rather than just giving OPM Flow access to your whole computer.** We get asked this fairly often, so here is the honest reasoning. It would be technically possible to make the container able to see your entire hard drive instead of just one folder. We chose not to do that, on purpose, for a simple reason: OPM Flow's Docker image comes from a third party, not from us, and handing it read and write access to every file on your computer (your documents, your photos, your other projects, everything) is a much bigger risk than it looks. If there were ever a bug in OPM Flow itself, or a problem with the image at its source, the damage that could cause would be limited to just the one folder you are working in, rather than your whole machine. For the ordinary case, where a simulation case's files all live together in one project folder, this restriction costs you nothing. It only becomes a question when a case genuinely needs a file from somewhere else.
+
+**If you do have files outside your working folder that a case needs**, you do not need to move them, and you do not need to widen access to your whole computer either. Set the `OPM_FLOW_EXTRA_MOUNTS` environment variable before running `flow`, and it will let OPM Flow see exactly the extra folders you list, and nothing more.
+
+On Linux and macOS:
+
+```bash
+OPM_FLOW_EXTRA_MOUNTS=/data/shared flow CASE.DATA
+```
+
+This makes `/data/shared` visible inside the container at the exact same path, so a file your `.DATA` deck already refers to as `/data/shared/props.inc` will simply work, with nothing to change in the deck itself.
+
+If you would rather it show up at a different path inside the container, or you need more than one extra folder, you can be more specific:
+
+```bash
+OPM_FLOW_EXTRA_MOUNTS=/data/pvt=/mnt/pvt flow CASE.DATA
+OPM_FLOW_EXTRA_MOUNTS=/data/a:/data/b flow CASE.DATA
+```
+
+Paths are separated with a colon (the same character your PATH variable already uses), and `=` lets you choose a different path inside the container than on your own computer.
+
+On Windows, the idea is the same, but the exact syntax is a little different, because Windows paths already use a colon for the drive letter (like `C:\`), so semicolons separate multiple entries instead, and you always have to say exactly where the folder should appear inside the container, since there is no automatic "same path" translation from a Windows path into a Linux one:
+
+```powershell
+$env:OPM_FLOW_EXTRA_MOUNTS = "C:\data\shared=/data/shared"
+flow CASE.DATA
+```
+
+```powershell
+$env:OPM_FLOW_EXTRA_MOUNTS = "C:\data\a=/data/a;C:\data\b=/mnt/b"
+flow CASE.DATA
+```
+
+Setting an environment variable this way only applies to that one PowerShell window and the commands you run in it afterward. It does not change any permanent Windows setting, and closing the window forgets it, so you would need to set it again next time if you use it regularly.
+
+**What can go wrong here:**
+
+- **A path listed in `OPM_FLOW_EXTRA_MOUNTS` does not exist**: the script checks each path before using it and simply skips (with a warning) anything it cannot find, rather than failing the whole simulation. Double check the exact path for typos if a file still is not found inside the container.
+- **You forgot to say where a folder should go inside the container on Windows**: unlike Linux and macOS, Windows requires the `=CONTAINER_PATH` part every time. If you leave it out, you will see a clear warning telling you the entry was skipped and why.
+- **Files still are not found even after setting this**: double check that the path used inside your `.DATA` file's `INCLUDE` statement matches the container-side path exactly, not the original path on your own computer, if the two are different.
+
 ## Part 2: ResInsight
 
 ### What ResInsight is
@@ -563,7 +615,7 @@ Once installed, you can launch it by typing:
 resinsight
 ```
 
-from any terminal window, on any operating system this script supports. On Linux, the installer also adds a ResInsight entry to your applications menu, the same place you would find any other installed app, so you can launch it by clicking rather than typing a command if you prefer.
+from any terminal window, on any operating system this script supports. On Linux, the installer also adds a ResInsight entry to your applications menu, complete with ResInsight's own icon, the same place you would find any other installed app, so you can launch it by clicking rather than typing a command if you prefer.
 
 On macOS, since ResInsight installs as a normal `.app` bundle into your Applications folder, it already shows up in Launchpad and Spotlight automatically. No extra step is needed for that.
 
@@ -571,7 +623,7 @@ On macOS, since ResInsight installs as a normal `.app` bundle into your Applicat
 
 - **"Permission denied" when running `resinsight`**: if this happens after a successful install, it usually means a file permission issue from an older version of this installer. Re-run the installer once (it is safe to run again) to have it recreate the command with the correct permissions, then try again.
 - **On macOS, "app is damaged and can't be opened"**: this happens because ResInsight's current macOS build is not digitally signed by Apple, which macOS treats with extra suspicion by default (this is called Gatekeeper). The installer already handles this for you automatically during install by removing the quarantine flag Apple attaches to newly downloaded files. If you still see this message, it likely means the file was downloaded or moved some other way after the installer ran. Re-running the installer will fix it.
-- **The desktop icon on Linux does not show a picture, just a generic icon**: this is cosmetic only, the program still works exactly the same. It happens when the installer could not find an icon file bundled inside that particular ResInsight release to use.
+- **On Linux, the application menu entry shows a blank or generic icon**: the installer looks for an icon bundled inside that specific ResInsight release first, and downloads a known-good copy of ResInsight's own icon as a backup if it cannot find one, so this should be uncommon. If you still see a blank icon, it is most likely because your computer could not reach the internet to download that backup icon at install time (for example, no connection, or a restricted network). It is purely cosmetic either way; the program itself works exactly the same. Re-running the installer once you have a working internet connection will fix it. Some desktop environments also only refresh their icon cache when you log out and back in, so try that too if a re-run does not seem to help right away.
 
 ### ResInsight on Windows
 
