@@ -218,7 +218,7 @@ You do not have to let the script install Docker for you. If you would rather do
 
 **Official guide:** Docker's own installation instructions are always the most accurate and up to date source, and cover essentially every Linux distribution and macOS: [https://docs.docker.com/get-started/get-docker/](https://docs.docker.com/get-started/get-docker/)
 
-**Video walkthrough (Linux):** if you prefer to watch someone do it step by step, here is a clear tutorial for installing Docker on Ubuntu, which is similar on most other Debian-based distributions too.
+**Video walkthrough (Linux):** if you prefer to watch someone do it step by step, here is a clear tutorial for installing Docker on Ubuntu, or similar Debian-based distributions too.
 
 [![Easily Install Docker on Linux and Run Your First Container, step by step video guide](https://img.youtube.com/vi/FvdlwyMwrzg/maxresdefault.jpg)](https://www.youtube.com/watch?v=FvdlwyMwrzg)
 
@@ -473,13 +473,13 @@ opmflow configure --variant amd64
 
 ### Where OPM Flow can see your files
 
-This part matters more than it might seem, so it gets its own section rather than being buried in a note.
+This part matters more than it might seem, so we will address it in this section.
 
 When you run `flow SPE1.DATA`, OPM Flow is not actually running directly on your computer. It is running inside a Docker container, a sealed box, as explained in the glossary above. By default, the only folder from your computer that OPM Flow can see and use inside that box is the one you are standing in when you type the command (your current folder), along with anything inside it.
 
-In practice, this means: **your `.DATA` file, and every other file it refers to with an `INCLUDE` statement, need to live in the folder you are running `flow` from, or in a subfolder underneath it.** If your `.DATA` file tries to `INCLUDE` a file from somewhere else entirely on your computer, for example a shared properties file kept in a different project folder, OPM Flow will not be able to find it, even though the file genuinely exists on your machine.
+In practice, this means: **your `.DATA` file, and every other file it refers to with an `INCLUDE` statement, need to live in the folder you are running `flow` from, or in a subfolder inside it.** If your `.DATA` file tries to `INCLUDE` a file from somewhere else entirely on your computer, for example a shared properties file kept in a different project folder, OPM Flow will not be able to find it, even though the file genuinely exists on your machine.
 
-**Why it works this way, rather than just giving OPM Flow access to your whole computer.** We get asked this fairly often, so here is the honest reasoning. It would be technically possible to make the container able to see your entire hard drive instead of just one folder. We chose not to do that, on purpose, for a simple reason: OPM Flow's Docker image comes from a third party, not from us, and handing it read and write access to every file on your computer (your documents, your photos, your other projects, everything) is a much bigger risk than it looks. If there were ever a bug in OPM Flow itself, or a problem with the image at its source, the damage that could cause would be limited to just the one folder you are working in, rather than your whole machine. For the ordinary case, where a simulation case's files all live together in one project folder, this restriction costs you nothing. It only becomes a question when a case genuinely needs a file from somewhere else.
+**Why it works this way, rather than just giving OPM Flow access to your whole computer.** This will get asked fairly often, so here is the honest reasoning. It would be technically possible to make the container able to see your entire hard drive instead of just one folder. We chose not to do that, on purpose, for a simple reason: OPM Flow's Docker image comes from a third party, not from us, and handing it read and write access to every file on your computer (your documents, your photos, your other projects, everything) is a much bigger risk than it looks. If there were ever a bug in OPM Flow itself, or a problem with the image at its source, the damage that could cause would be limited to just the one folder you are working in, rather than your whole machine. For the ordinary case, where a simulation case's files all live together in one project folder, this restriction costs you nothing. It only becomes a question when a case genuinely needs a file from somewhere else.
 
 **If you do have files outside your working folder that a case needs**, you do not need to move them, and you do not need to widen access to your whole computer either. Set the `OPM_FLOW_EXTRA_MOUNTS` environment variable before running `flow`, and it will let OPM Flow see exactly the extra folders you list, and nothing more.
 
