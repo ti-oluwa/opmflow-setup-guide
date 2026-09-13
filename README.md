@@ -423,6 +423,7 @@ Unlike on Linux and macOS, these commands are installed per-user, into a folder 
 
 - **You ran the script, it finished, but typing `flow` says it is not recognized**: PowerShell only reloads your PATH when a new window opens. Close your PowerShell window and open a fresh one, then try `flow --version` again.
 - **The final check fails with an error about running Flow**: this usually means Docker was not fully ready yet when the script tried to use it. Wait a minute for Docker Desktop to finish starting completely (check its window or tray icon), then run the script again, it will skip the parts that already succeeded.
+- **The script fails with an error saying that script execution is not allowed**: PowerShell's execution policy is preventing the installer from running. Run `Get-ExecutionPolicy -List` to check the current policies, then run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` to allow locally run scripts for your user. Rerun the last command to start the installer again.
 
 #### How it works, for the curious
 
