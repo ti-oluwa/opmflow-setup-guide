@@ -345,7 +345,7 @@ wsl --install
 
 #### Step 2: Install Docker Desktop
 
-1. Go to [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/) and download Docker Desktop for Windows.
+1. Go to [https://docs.docker.com/desktop/setup/install/windows-install/](https://docs.docker.com/desktop/setup/install/windows-install/) and download Docker Desktop for Windows.
 2. Run the downloaded installer. Keep the default option to use the **WSL2 backend** checked, since that is what this script and OPM Flow's images expect.
 3. Once installation finishes, it will likely ask you to log out or restart. Do so if asked.
 4. Open Docker Desktop from your Start menu. The first time you open it, it may ask you to accept a license agreement, and possibly to sign in or create a free Docker account (you can also usually skip the sign-in step and continue without an account).
