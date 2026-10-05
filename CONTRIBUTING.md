@@ -8,7 +8,7 @@ Thank you for wanting to help improve these scripts or their documentation. This
 - **Report a problem.** See [ISSUE.md](ISSUE.md). Reporting a clear, detailed issue is genuinely one of the most useful things you can do, even if you never touch the scripts yourself.
 - **Suggest a documentation fix.** If something in the [README.md](README.md) or [FAQ.md](FAQ.md) was unclear, confusing, or just plain wrong, telling us is valuable on its own, even if you do not want to write the fix yourself. Open an issue describing what confused you and why.
 - **Improve the documentation yourself.** If you are comfortable editing a text file, you can propose the fix directly, see the step by step guide below.
-- **Improve or fix a script.** The same process below applies to changes to `opmflow-setup.sh`, `opmflow-setup.ps1`, `resinsight-setup.sh`, or `resinsight-setup.ps1`.
+- **Improve or fix a script.** The same process below applies to changes to `opmflow-setup.sh`, `opmflow-setup.ps1`, `resinsight-setup.sh`, `resinsight-setup.ps1`, or their matching uninstall scripts (`opmflow-uninstall.sh`, `opmflow-uninstall.ps1`, `resinsight-uninstall.sh`, `resinsight-uninstall.ps1`). **If you change what an installer puts on someone's computer** (a new file, folder, shortcut, PATH entry or setting), update the matching uninstaller in the same change, and the "What gets removed" part of [Part 3](README.md#part-3-uninstalling), so it can still remove everything cleanly. The uninstallers are deliberately careful to only delete things they can positively identify as their own, so a new file usually needs a way to be recognized as well.
 
 ## Step by step: proposing a change
 

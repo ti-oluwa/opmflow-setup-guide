@@ -32,7 +32,7 @@ Copy everything inside the box below into the issue description box, then replac
 ````text
 ### Which script were you running?
 
-(For example: opmflow-setup.sh, opmflow-setup.ps1, resinsight-setup.sh, or resinsight-setup.ps1)
+(For example: opmflow-setup.sh, opmflow-setup.ps1, resinsight-setup.sh, resinsight-setup.ps1, or one of the uninstall scripts such as opmflow-uninstall.sh or resinsight-uninstall.ps1)
 
 
 ### Operating system and version

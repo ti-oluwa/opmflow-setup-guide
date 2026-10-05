@@ -94,6 +94,48 @@ No. Both scripts check whether the exact version you are asking for is already i
 
 Yes. On Linux, pass `--no-desktop-entry`. On Windows, pass `-NoShortcut`. On macOS, ResInsight always appears in Launchpad automatically once installed, since that is simply how any application placed in the Applications folder behaves on macOS, there is no separate step to opt out of.
 
+## Uninstalling
+
+### How do I uninstall OPM Flow or ResInsight?
+
+Each tool has a matching uninstall script: `opmflow-uninstall.sh` and `opmflow-uninstall.ps1` for OPM Flow, `resinsight-uninstall.sh` and `resinsight-uninstall.ps1` for ResInsight. The full walkthrough, with a step by step guide for every platform, is in [Part 3: Uninstalling](README.md#part-3-uninstalling) of the README. If you only want the short version: download the script for your system, run it once with `--dry-run` (or `-DryRun` on Windows) to preview what it will remove, then run it for real.
+
+### Will uninstalling delete my simulation files or my ResInsight projects?
+
+No. The uninstallers only remove what the installers put on your computer. Your `.DATA` files, simulation results and ResInsight project files are in your own folders and are never touched. ResInsight's own saved preferences (such as its list of recent files) are not touched either.
+
+### Does the uninstaller remove Docker?
+
+No, on purpose. Docker is a general purpose tool that many people use for other things, and the OPM Flow installer does not keep a record of whether it was the one that installed Docker, so the uninstaller cannot know whether removing it would break something else. It removes the OPM Flow Docker images that were downloaded, but leaves Docker itself and WSL2 alone. If you want to remove those too, see [Removing Docker and WSL2 yourself](README.md#removing-docker-and-wsl2-yourself-optional), and read the warning there first, because removing Docker Desktop also removes every other image, container and volume stored in it.
+
+### How do I see what an uninstall script would do without it actually doing anything?
+
+Run it with `--dry-run` (Linux and macOS) or `-DryRun` (Windows). It lists exactly what it found and what it would remove, then stops without changing anything. A dry run on Linux and macOS does not even need `sudo`.
+
+### I want to free up disk space but keep OPM Flow. What can I do?
+
+The Docker images are the biggest part of an OPM Flow installation. Every time you switch versions with `opmflow upgrade`, the new image is downloaded and the old one is left behind. You can see the ones you have with `docker image ls openporousmedia/opmreleases`, and remove an old one you no longer use with `docker rmi` followed by its name and tag as shown in that list. Docker will refuse to remove one that is currently in use, which is what you want. Do not remove the one that you are currently using, or OPM Flow will simply download it again the next time you run it.
+
+### I have two versions of ResInsight installed. Can I remove only one?
+
+Yes. Use `--version` on Linux and macOS, or `-Version` on Windows, for example `./resinsight-uninstall.sh --version 2026.06.0`. Only that version is removed, and a command, shortcut or menu entry that points at the version you are keeping is left alone and keeps working.
+
+### The uninstaller said it left something in place. Is that a problem?
+
+Usually not. The uninstallers only delete things they can positively recognize as having been created by the matching installer. If they find something with a similar name that they cannot prove is theirs, for example a different program that is also called `flow`, they leave it alone and tell you, so they never delete something that was not theirs. Each of these lines says why it was left. The other common reason is that something could not be checked, for example because Docker was not running. In that case, start Docker and run the uninstaller again.
+
+### I installed ResInsight into a custom folder. Will the uninstaller find it?
+
+Not automatically, because the installer does not remember where it installed. Tell the uninstaller the same folder you gave the installer: `--install-root FOLDER` on Linux and macOS, `-InstallRoot FOLDER` on Windows. If the uninstaller finds nothing in the default location but sees that your `resinsight` command or shortcut points somewhere else, it prints that location so you know what to give it.
+
+### Is it safe to run an uninstaller twice?
+
+Yes. Each part is checked separately, so running it a second time just removes whatever the first run could not (for example Docker images, because Docker was switched off), or says there is nothing left to remove.
+
+### Can I undo an uninstall?
+
+Run the installer again. Anything that was removed is installed again from scratch. One thing to know: if you did not use `--keep-images` (or `-KeepImages`) or `--keep-cache` (or `-KeepCache`), the OPM Flow Docker image or the ResInsight download will have to be downloaded again, which can take a while.
+
 ## Troubleshooting in general
 
 ### I followed all the steps and it still does not work. What now?

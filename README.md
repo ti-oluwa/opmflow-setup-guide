@@ -5,7 +5,7 @@ This repository has simple setup scripts for two tools used in reservoir simulat
 1. **OPM Flow**, a reservoir simulator, installed and run through Docker.
 2. **ResInsight**, a 3D viewer for looking at simulation results, installed as a normal desktop application.
 
-There are four scripts in total. Two for OPM Flow (one for Linux and macOS, one for Windows) and two for ResInsight (same split). You only need to run the ones for your own operating system and the tool you want.
+There are four setup scripts in total. Two for OPM Flow (one for Linux and macOS, one for Windows) and two for ResInsight (same split). You only need to run the ones for your own operating system and the tool you want.
 
 | Script | What it installs | Platform |
 |---|---|---|
@@ -13,6 +13,15 @@ There are four scripts in total. Two for OPM Flow (one for Linux and macOS, one 
 | `opmflow-setup.ps1` | OPM Flow (via Docker) | Windows |
 | `resinsight-setup.sh` | ResInsight (desktop app) | Linux and macOS |
 | `resinsight-setup.ps1` | ResInsight (desktop app) | Windows |
+
+Each of them also has a matching uninstall script, in case you want to remove a tool again later. Those are covered in [Part 3: Uninstalling](#part-3-uninstalling).
+
+| Script | What it removes | Platform |
+|---|---|---|
+| `opmflow-uninstall.sh` | OPM Flow | Linux and macOS |
+| `opmflow-uninstall.ps1` | OPM Flow | Windows |
+| `resinsight-uninstall.sh` | ResInsight | Linux and macOS |
+| `resinsight-uninstall.ps1` | ResInsight | Windows |
 
 This README is written as a full tutorial. It assumes you might not be comfortable with the command line yet, especially if you are on Windows, so it walks through everything step by step, including what the buttons and words mean. If you already know your way around a terminal, feel free to skip ahead using the table of contents below.
 
@@ -35,6 +44,17 @@ If something in this guide does not work for you, that is useful information for
   - [What the installer actually does](#what-the-resinsight-installer-actually-does)
   - [ResInsight on Linux and macOS](#resinsight-on-linux-and-macos)
   - [ResInsight on Windows](#resinsight-on-windows)
+- [Part 3: Uninstalling](#part-3-uninstalling)
+  - [Before you uninstall](#before-you-uninstall)
+  - [What gets removed, and what never does](#what-gets-removed-and-what-never-does)
+  - [Getting the uninstall scripts](#getting-the-uninstall-scripts)
+  - [Preview first with a dry run](#preview-first-with-a-dry-run)
+  - [Uninstalling OPM Flow on Linux and macOS](#uninstalling-opm-flow-on-linux-and-macos)
+  - [Uninstalling OPM Flow on Windows](#uninstalling-opm-flow-on-windows)
+  - [Uninstalling ResInsight on Linux and macOS](#uninstalling-resinsight-on-linux-and-macos)
+  - [Uninstalling ResInsight on Windows](#uninstalling-resinsight-on-windows)
+  - [Removing Docker and WSL2 yourself (optional)](#removing-docker-and-wsl2-yourself-optional)
+  - [How the uninstallers keep your computer safe, for the curious](#how-the-uninstallers-keep-your-computer-safe-for-the-curious)
 - [Frequently asked questions](#frequently-asked-questions)
 - [Reporting a problem](#reporting-a-problem)
 - [Contributing](#contributing)
@@ -63,7 +83,7 @@ If some of these words are new to you, read through this section once before you
 
 **Bash / shell:** The program that reads and runs the commands you type into a terminal on Linux and macOS. When this guide says "open a terminal" on Linux or macOS, this is what you are talking to.
 
-**Script:** A plain text file full of commands that your computer reads and runs one after another automatically, instead of you typing each command yourself. The four `.sh` and `.ps1` files in this repository are scripts.
+**Script:** A plain text file full of commands that your computer reads and runs one after another automatically, instead of you typing each command yourself. The `.sh` and `.ps1` files in this repository are scripts.
 
 **Repository (repo):** A folder of files, usually code, stored online (commonly on a site called GitHub) that other people can look at or download.
 
@@ -92,6 +112,14 @@ If some of these words are new to you, read through this section once before you
 **Shortcut / symlink:** A pointer to a program that lives somewhere else, so you can launch it from an easier place (like your Start Menu or desktop) without knowing its real file location.
 
 **Environment variable:** A named value that your terminal session or your whole computer keeps track of, which programs can read. Some steps in this guide ask you to set one before running a command, for example `OPM_FLOW_EXTRA_MOUNTS=/some/path flow CASE.DATA`. Setting it this way only affects that one command; it does not change your computer's settings permanently.
+
+**Uninstaller:** A script that removes what an installer put on your computer, the way "Uninstall" in your system settings removes an ordinary app. The scripts in Part 3 are uninstallers.
+
+**Dry run:** Running a script in a mode where it shows you what it would do, but does not actually do any of it. It is a rehearsal. Every uninstall script has one, and it is the safest way to see what a script will do before you let it.
+
+**Flag (also called an option):** An extra word you add after a command to change how it behaves, for example `--dry-run` or `-DryRun`. Flags start with one or two dashes.
+
+**Cache:** A folder where a program keeps files it downloaded, so it does not have to download them again next time. Deleting a cache never breaks anything. It only means the files get downloaded again if they are needed.
 
 ## Getting the scripts onto your computer
 
@@ -125,7 +153,7 @@ On Windows, in PowerShell:
 Invoke-WebRequest -Uri https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/opmflow-setup.ps1 -OutFile opmflow-setup.ps1
 ```
 
-Swap the `<filename>` in `https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/<filename>` with the name of whichever of the four scripts you need (Do not forget to include the file extension in the file name - ".ps1" or ".sh").
+Swap the `<filename>` in `https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/<filename>` with the name of whichever of the scripts you need (Do not forget to include the file extension in the file name - ".ps1" or ".sh").
 
 ### Option C: Clone the whole repository (if you already use git)
 
@@ -134,7 +162,7 @@ git clone https://github.com/ti-oluwa/opmflow-setup-guide.git
 cd opmflow-setup-guide
 ```
 
-All four scripts will now be in that folder - `opmflow-setup-guide/scripts`, together.
+All the scripts (the setup scripts and the uninstall scripts) will now be in that folder - `opmflow-setup-guide/scripts`, together.
 
 ## Part 1: OPM Flow
 
@@ -693,6 +721,372 @@ from any PowerShell window.
 ResInsight ships its Linux builds with a small launcher script alongside the real program, meant to set a few things up before starting the actual application. That launcher script works out where it is located using an older, somewhat fragile shell technique that does not reliably work when you try to run it from a shortcut or from a different folder than the one it lives in. Rather than relying on that, our installer works out the real, correct location of the ResInsight program at install time and writes its own small, more reliable launcher pointing directly at it. This is why running `resinsight` works correctly from anywhere on your computer, not just from inside ResInsight's own install folder.
 
 On Windows, no such workaround is needed. Windows programs find their own supporting files based on where the actual program file is, regardless of how you launched it, so the installer simply points a shortcut and an optional PATH entry straight at the real program.
+
+## Part 3: Uninstalling
+
+Every installer in this guide has a matching uninstaller. They are separate scripts, so you only download them if you actually need them.
+
+### Before you uninstall
+
+A few things are worth knowing before you remove anything.
+
+**You may not need to uninstall at all.** If your goal is to switch to a different OPM Flow version, you do not have to remove anything first. See [How do I switch to a different OPM Flow version later?](FAQ.md#how-do-i-switch-to-a-different-opm-flow-version-later). Uninstalling is for when you no longer want the tool, want your disk space back, or want a completely clean start.
+
+**Your own work is safe.** The uninstallers only remove what the installers put on your computer. They never touch your simulation files (`.DATA` files and results) or your ResInsight project files.
+
+**Docker and WSL2 are left alone.** The OPM Flow installer may have installed Docker for you, but Docker is a big, general purpose tool that many people use for other things too. The installer does not keep a record of whether it was the one that installed Docker, so the uninstaller cannot know whether removing it would break something else you rely on. It never removes Docker for you. If you want Docker gone as well, see [Removing Docker and WSL2 yourself](#removing-docker-and-wsl2-yourself-optional).
+
+**Every uninstaller shows you what it found before it removes anything, and asks you first.** You will always get a chance to say no.
+
+### What gets removed, and what never does
+
+| | OPM Flow | ResInsight |
+|---|---|---|
+| **Removed** | The `opmflow` and `flow` commands, the saved settings, and the OPM Flow Docker images that were downloaded | The program, its commands and menu entries or shortcuts, any PATH entries it added, and the download cache |
+| **Never removed** | Docker, Docker Desktop, WSL2, and your simulation files | Your ResInsight project files and ResInsight's own saved preferences (for example its list of recent files) |
+
+### Getting the uninstall scripts
+
+Getting them works exactly like getting the setup scripts, so if you need a refresher, see [Getting the scripts onto your computer](#getting-the-scripts-onto-your-computer). The four uninstall scripts are:
+
+| Script | What it removes | Platform |
+|---|---|---|
+| `opmflow-uninstall.sh` | OPM Flow | Linux and macOS |
+| `opmflow-uninstall.ps1` | OPM Flow | Windows |
+| `resinsight-uninstall.sh` | ResInsight | Linux and macOS |
+| `resinsight-uninstall.ps1` | ResInsight | Windows |
+
+For example, to download the Linux and macOS one for OPM Flow from a terminal:
+
+```bash
+curl -O https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/opmflow-uninstall.sh
+```
+
+Or the Windows one for ResInsight, in PowerShell:
+
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/ti-oluwa/opmflow-setup-guide/refs/heads/main/scripts/resinsight-uninstall.ps1 -OutFile resinsight-uninstall.ps1
+```
+
+Just swap the file name at the end for whichever script you need. The same warning from before applies: if your browser saves the file as `something.sh.txt`, rename it so it ends in `.sh` or `.ps1`.
+
+Because an uninstaller deletes things, the [security disclaimer](#security-disclaimer-please-read-this-first) near the top applies to these scripts just as much as to the installers, and the preview described next is the best way to build confidence before you run one for real.
+
+### Preview first with a dry run
+
+Every uninstall script has a **dry run** mode. A dry run shows you exactly what the script found and what it would remove, and then stops without changing anything at all. It is the safest way to find out what an uninstaller will do on your own computer, so we recommend always doing it first.
+
+- On Linux and macOS, add `--dry-run` after the script name.
+- On Windows, add `-DryRun` after the script name.
+
+You will see this used in every walkthrough below. A dry run does not need `sudo` on Linux and macOS.
+
+When you run an uninstaller for real, it ends by asking:
+
+```
+Remove the items marked 'remove' above? [y/N]
+```
+
+The capital **N** means "no" is the default, so if you just press Enter, nothing happens. Type `y` and press Enter to go ahead. Every list the script prints marks each item as `remove` (it will be deleted), `keep` (it was found, but it is deliberately being left alone, and the line tells you why) or `skip` (something could not be checked, and the line tells you why).
+
+### Uninstalling OPM Flow on Linux and macOS
+
+This section covers `opmflow-uninstall.sh`.
+
+#### Step 1: Open a terminal and go to the script
+
+Open a terminal and go to the folder where you saved the script, exactly as in [OPM Flow on Linux and macOS](#opm-flow-on-linux-and-macos), Steps 1 and 2. For example:
+
+```bash
+cd ~/Downloads
+```
+
+#### Step 2: Make the script executable
+
+```bash
+chmod +x opmflow-uninstall.sh
+```
+
+As before, nothing will appear to happen. That is normal.
+
+#### Step 3: Preview what it would remove
+
+```bash
+./opmflow-uninstall.sh --dry-run
+```
+
+You will see something like this:
+
+```
+[opm-flow] Found on this computer:
+[opm-flow]
+[opm-flow]     remove    /usr/local/bin/opmflow   (the OPM Flow command)
+[opm-flow]     remove    /usr/local/bin/flow   (shortcut to the command above)
+[opm-flow]     remove    /etc/opm-flow   (saved version and variant settings)
+[opm-flow]     remove    Docker image openporousmedia/opmreleases:2026.04_amd64
+[opm-flow]
+[opm-flow] Not touched, on purpose:
+[opm-flow]     - Docker itself
+[opm-flow]     - your simulation files (.DATA files and results)
+```
+
+If the list looks right, continue.
+
+#### Step 4: Run it for real
+
+```bash
+sudo ./opmflow-uninstall.sh
+```
+
+Enter your password if asked, read the list one more time, and type `y` to confirm. We need `sudo` here for the same reason the installer did: the `opmflow` and `flow` commands and their settings live in system folders.
+
+If you would like to remove the commands but keep the downloaded Docker images, so that a later reinstall is much faster, add `--keep-images`:
+
+```bash
+sudo ./opmflow-uninstall.sh --keep-images
+```
+
+The images are usually the biggest part of an OPM Flow installation, so if you are uninstalling to free up disk space, do not use this option.
+
+#### Step 5: Check that it worked
+
+Open a **new** terminal window and type:
+
+```bash
+flow --help
+```
+
+You should now see `command not found`. If you want to double check that the images are gone as well, type:
+
+```bash
+docker image ls openporousmedia/opmreleases
+```
+
+You should see an empty table with just the column titles.
+
+**What can go wrong here:**
+
+- **"This uninstaller must be run with sudo"**: you ran it without `sudo` and without `--dry-run`. Use the command in Step 4.
+- **"Docker is installed but not running"** (shown as a `skip` line): the script cannot remove Docker images while Docker is switched off, and it deliberately never starts Docker for you. The commands and settings were still removed. Start Docker (on macOS, open Docker Desktop and wait for the whale icon to settle), then simply run the uninstaller again. It is safe to run it as many times as you like, and the second run will pick up the images.
+- **"Docker refused to remove it (is a simulation still running?)"**: Docker will not delete an image while a container is still using it, and the script never forces it. Wait for your simulation to finish, or stop it, then run the uninstaller again.
+- **A line saying `/usr/local/bin/flow` was left alone because it is "not the OPM Flow command"**: `flow` is a common name, and other programs use it too (a well known JavaScript tool is also called `flow`, for example). The uninstaller only deletes a `flow` that points at the OPM Flow command, and leaves anything else untouched. One honest gotcha here: if you already had a different `flow` before you installed OPM Flow, the installer replaced it, and the uninstaller has no way to bring it back. You would have to reinstall that other program.
+- **`flow` still seems to work in the same terminal window after uninstalling**: your terminal remembers where commands were. Run `hash -r`, or just open a new terminal window.
+- **"Cannot ask for confirmation because there is no terminal"**: this only happens if the script was started somewhere that cannot show a question, such as an automated job. Add `--yes` to go ahead without being asked.
+- **On macOS, the Docker images are listed as skipped even though you installed OPM Flow**: make sure Docker Desktop is open and fully running (the whale icon in the menu bar should have stopped animating), then run the uninstaller again.
+
+### Uninstalling OPM Flow on Windows
+
+This section covers `opmflow-uninstall.ps1`. You do **not** need an Administrator PowerShell for this one, because everything the installer put there lives inside your own user folder.
+
+#### Step 1: Open PowerShell and go to the script
+
+Open PowerShell normally and go to the folder where you saved the script, as in [OPM Flow on Windows](#opm-flow-on-windows). For example:
+
+```powershell
+cd $HOME\Downloads
+```
+
+#### Step 2: Preview what it would remove
+
+As with the installer, Windows blocks scripts by default, so we run it with a one-off permission:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\opmflow-uninstall.ps1 -DryRun
+```
+
+#### Step 3: Run it for real
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\opmflow-uninstall.ps1
+```
+
+Read the list, then type `y` and press Enter. To keep the downloaded Docker images and only remove the commands and settings, add `-KeepImages` at the end.
+
+#### Step 4: Check that it worked
+
+Close PowerShell, open a **new** PowerShell window, and type:
+
+```powershell
+flow
+```
+
+You should see that `flow` is not recognized as a command.
+
+**What can go wrong here:**
+
+- **"Docker Desktop is installed but not running"** (shown as a `skip` line): same as on Linux and macOS. The commands and settings are removed, but the images cannot be removed while Docker Desktop is switched off, and the script never starts it for you. Open Docker Desktop, wait until it says it is running, and run the uninstaller again.
+- **`flow` still works in a PowerShell window that was already open**: that is expected. Windows only reads your PATH when a window opens, so windows that were already open keep their old copy until you close and reopen them. The script clears it from the window you ran it in.
+- **A warning that your PATH could not be updated**: the commands themselves were still removed, so nothing is broken, but a leftover entry may remain in your PATH. It is harmless, but you can remove it by hand: press the Windows key, search for **Edit environment variables for your account**, select **Path**, click **Edit**, select the line ending in `opm-flow\bin`, click **Delete**, and then **OK** on each window.
+- **"I want my old PATH back"**: before changing your PATH, the script saves your previous PATH to a small text file in your temporary folder, named like `opmflow-uninstall-user-path-20261005-101500.txt`, and tells you where. You can open your temporary folder by pressing the Windows key plus `R`, typing `%TEMP%`, and pressing Enter. Windows clears this folder out from time to time, so do not rely on it for the long term.
+- **You installed from a different Windows account**: if you installed while signed in as a different user (for example a separate administrator account), the files are inside that account's user folder, not yours. Sign in as that account to uninstall.
+
+### Uninstalling ResInsight on Linux and macOS
+
+This section covers `resinsight-uninstall.sh`.
+
+#### Step 1: Open a terminal, go to the script and make it executable
+
+As in [ResInsight on Linux and macOS](#resinsight-on-linux-and-macos), Steps 1 to 3:
+
+```bash
+cd ~/Downloads
+chmod +x resinsight-uninstall.sh
+```
+
+#### Step 2: Close ResInsight
+
+If ResInsight is open, close it completely first. The uninstaller will stop and ask you to do this if it finds ResInsight running, rather than deleting files out from under a running program.
+
+#### Step 3: Preview what it would remove
+
+```bash
+./resinsight-uninstall.sh --dry-run
+```
+
+On Linux, you will see something like this (the exact versions and folders will match your own computer):
+
+```
+[resinsight] Looking in: /opt/resinsight
+[resinsight]
+[resinsight] Found on this computer:
+[resinsight]
+[resinsight]     remove    /opt/resinsight/v2026.06.1   (ResInsight v2026.06.1, 412M)
+[resinsight]     remove    /usr/local/bin/resinsight   (the 'resinsight' command)
+[resinsight]     remove    /home/you/.local/share/applications/resinsight.desktop   (application menu entry)
+[resinsight]     remove    /root/.cache/resinsight-setup/v2026.06.1   (downloaded installer files, 185M)
+```
+
+#### Step 4: Run it for real
+
+If you installed ResInsight with `sudo` (the default on Linux), uninstall with `sudo` too:
+
+```bash
+sudo ./resinsight-uninstall.sh
+```
+
+If you installed into a folder of your own with `--install-root` (see below), you do not need `sudo`. The script also asks for your password itself, only at the moment it needs one.
+
+Type `y` to confirm.
+
+#### Step 5: Check that it worked
+
+Open a new terminal and type `resinsight`. You should see `command not found`. On Linux, ResInsight should also have disappeared from your applications menu. On some desktops this takes a moment, or until you log out and back in.
+
+#### Options you may need
+
+| Option | What it does |
+|---|---|
+| `--dry-run` | Show what would be removed, and change nothing |
+| `--version 2026.06.0` | Remove only that version. The leading `v` is optional |
+| `--install-root FOLDER` | Where ResInsight was installed, if you gave the installer a custom `--install-root` |
+| `--keep-cache` | Keep the downloaded installer files, so a later reinstall does not need to download them again |
+| `--yes` | Do not ask for confirmation |
+
+**What can go wrong here:**
+
+- **"ResInsight is running right now"**: close ResInsight completely (on macOS, quit it from the menu bar, not just close the window) and run the uninstaller again.
+- **"Nothing to remove", but you know ResInsight is installed**: you most likely gave the installer a custom `--install-root`. The installer does not remember where it installed, so tell the uninstaller the same folder. The script helps here: if the `resinsight` command points somewhere else, it prints that location for you. For example:
+
+  ```bash
+  ./resinsight-uninstall.sh --install-root "$HOME/resinsight"
+  ```
+
+  Keep the quotes, and use `$HOME` rather than `~` inside them, because `~` is not expanded inside quotes or after an `=` sign.
+- **You have more than one version installed, and only want to remove one**: the installer keeps each version in its own folder, so use `--version`. A `resinsight` command or shortcut that still points at a version you are keeping is left in place and keeps working. If you remove the specific version that the `resinsight` command pointed at, the command goes with it, and the script tells you how to get it back for the version that remains (run the installer again for that version).
+- **On macOS, the script says `ResInsight.app` "was not installed by this installer" and leaves it**: the installer leaves a small version marker file next to the app it installs, and the uninstaller only removes an app that has one. That protects a copy of ResInsight you installed some other way. If you do want that copy gone, drag it to the Trash yourself.
+- **A line saying a command or menu entry was left alone because it was "not created by the ResInsight installer"**: the uninstaller only deletes files it can positively recognize as its own. Anything else with a similar name is left untouched and reported to you.
+- **Two different "cache" locations**: if you installed with `sudo`, the downloaded installer files are usually stored in the administrator's home folder, while the menu icon is stored in your own. The uninstaller checks both, which is another reason to run it with `sudo` if you installed with `sudo`.
+- **Some empty folders such as `~/.cache` are left behind**: those are standard folders that many programs share, so the uninstaller never removes them, even when they happen to be empty.
+
+### Uninstalling ResInsight on Windows
+
+This section covers `resinsight-uninstall.ps1`. As with the installer, no Administrator rights are needed.
+
+#### Step 1: Close ResInsight, open PowerShell and go to the script
+
+Close ResInsight completely if it is open, then:
+
+```powershell
+cd $HOME\Downloads
+```
+
+#### Step 2: Preview what it would remove
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\resinsight-uninstall.ps1 -DryRun
+```
+
+#### Step 3: Run it for real
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\resinsight-uninstall.ps1
+```
+
+Read the list, then type `y` and press Enter.
+
+#### Step 4: Check that it worked
+
+Press the Windows key and search for **ResInsight**. It should no longer appear. If you used `-AddToPath` when installing, open a new PowerShell window and type `resinsight` to confirm the command is gone.
+
+#### Options you may need
+
+| Option | What it does |
+|---|---|
+| `-DryRun` | Show what would be removed, and change nothing |
+| `-Version 2026.06.0` | Remove only that version. The leading `v` is optional |
+| `-InstallRoot "D:\Tools\ResInsight"` | Where ResInsight was installed, if you gave the installer a custom `-InstallRoot` |
+| `-KeepCache` | Keep the downloaded installer files, so a later reinstall does not need to download them again |
+| `-Yes` | Do not ask for confirmation |
+
+Add these at the end of the command, for example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\resinsight-uninstall.ps1 -Version 2026.06.0 -DryRun
+```
+
+**What can go wrong here:**
+
+- **"ResInsight is running right now"**: close ResInsight completely and run the uninstaller again.
+- **"Could not fully remove" a folder**: Windows refuses to delete files that something else has open. The usual culprits are ResInsight itself, a File Explorer window that is showing that folder, or an antivirus scan that is busy with it. Close those and run the uninstaller again. It is safe to repeat, and the script picks up where it left off.
+- **A shortcut was left in place with a note that it points at another version**: this is deliberate. When you have more than one version installed and remove only one, any shortcut that still points at a version you are keeping is left alone, so it keeps working. If you remove the version a shortcut pointed at, the shortcut is removed, and the script tells you how to recreate it for the version that remains (run the installer again for that version).
+- **"Nothing to remove", but you know ResInsight is installed**: you most likely gave the installer a custom `-InstallRoot`. Give the same folder to the uninstaller. If a shortcut points at ResInsight somewhere else, the script prints that location for you.
+- **PATH entries**: these only exist if you installed with `-AddToPath`. If you installed several versions with it, there may be one entry for each, including ones for versions you had already deleted by hand. When you remove everything, the uninstaller removes those leftovers too. Every other entry in your PATH is kept exactly as it was, and a backup of your previous PATH is saved to your temporary folder first. See the OPM Flow Windows section above for how to find it, and for how to edit your PATH by hand if the script ever warns that it could not.
+- **Your Desktop shortcut is not found**: if your Desktop is synced with OneDrive, Windows keeps it in a different place. The script asks Windows for the real location, so it normally finds it anyway. If it ever misses one, you can simply delete that shortcut yourself.
+
+### Removing Docker and WSL2 yourself (optional)
+
+Only do this part if you are sure you no longer need Docker for anything else. It is not part of the uninstall scripts, on purpose.
+
+**Be careful, because this can delete other people's work too.** Docker keeps every image, container and volume you have ever created in one place, and removing Docker Desktop removes all of it, not just the OPM Flow parts. Before going ahead, check what else you have:
+
+```bash
+docker ps -a
+docker image ls
+docker volume ls
+```
+
+If any of that is something you care about, back it up first, or leave Docker installed. Leaving Docker installed costs you nothing except some disk space.
+
+If you are sure:
+
+- **Docker Desktop (Windows and macOS):** follow Docker's own instructions at [docs.docker.com/desktop/uninstall](https://docs.docker.com/desktop/uninstall/). On Windows this is also available by opening **Settings**, then **Apps**, finding **Docker Desktop**, and choosing **Uninstall**.
+- **Docker on Linux:** the exact steps depend on your distribution, and on whether you installed Docker Engine or Docker Desktop. Docker's installation pages for each distribution, at [docs.docker.com/engine/install](https://docs.docker.com/engine/install/), include an "uninstall" section that is specific to yours.
+- **WSL2 (Windows only):** WSL2 may be in use for other Linux systems that you installed, and removing a Linux system from WSL permanently deletes every file inside it. Do not remove WSL2 unless you are completely sure nothing else on the computer uses it. If you are sure, you can turn the feature off from **Turn Windows features on or off** in the Start menu.
+
+### How the uninstallers keep your computer safe, for the curious
+
+If you are happy just using the tools, you can skip this part. If you want to know why we are comfortable asking you to run scripts that delete things, here is how they are built.
+
+- **They identify before they delete.** Nothing is removed with a broad pattern or a wildcard. Every deletion is of one specific path that was recognized first, and every one of them is shown to you before you are asked to confirm.
+- **They only remove what they can prove is theirs.** The installers leave recognizable fingerprints behind: a particular piece of text inside the `opmflow` command, a small `.installed-version` marker file next to every ResInsight version, and a link that points at one exact place. The uninstallers look for those. A `flow` command that points somewhere else, a ResInsight folder with no marker, or a shortcut that points at a different install is left alone and reported, instead of being deleted because its name looked right.
+- **They never remove a whole folder blindly.** Folders such as the OPM Flow settings folder are only removed if they are empty after the script's own files are gone. If you put something else in there, it stays.
+- **They never force anything.** Docker images that are in use are reported, not forced out. Files that are in use on Windows are reported, not skipped silently.
+- **They never start or install anything.** If Docker is not running, the script tells you rather than launching it. And an uninstaller never installs anything.
+- **Docker and WSL2 are never touched.** See above for why.
+- **On Windows, your PATH is edited with great care.** Only the exact entries added by the installers are removed. Every other entry is kept character for character, including ones that use `%VARIABLES%`, and a backup of your previous PATH is saved first. The common shortcut for editing PATH silently rewrites entries that have nothing to do with what you are doing, so the script avoids it.
+- **Removing one thing never breaks another.** With several ResInsight versions installed, a command, shortcut or menu entry that still points at a version you are keeping is not removed.
+- **A dry run is always available**, and so is a confirmation question that defaults to "no".
+- **Running them twice is fine.** Each part of an uninstall is checked separately, so if something could not be removed the first time (Docker was switched off, a file was in use), running the uninstaller again picks up what is left, and running it when everything is already gone just says so.
 
 ## Frequently asked questions
 
